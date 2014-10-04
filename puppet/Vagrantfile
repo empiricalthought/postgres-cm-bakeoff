@@ -1,0 +1,20 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.provision "shell", inline: "echo Hello"
+
+  config.vm.define "primary" do |primary|
+    primary.vm.box = "ubuntu/trusty64"
+    config.vm.network "private_network", type: "dhcp"    
+  end
+
+  config.vm.define "standby" do |standby|
+    standby.vm.box = "ubuntu/trusty64"
+    config.vm.network "private_network", type: "dhcp"
+  end
+
+end
