@@ -1,11 +1,9 @@
 node 'primary.vagrant.dev' {
-  class { 
-    'postgresql::server': 
+  package {
+    ['tmux',
+     'postgresql']:
   }
 }
 
 node 'standby.vagrant.dev' {
-  class {
-    'postgresql::server':
-  }
 }
