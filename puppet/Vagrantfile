@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.define "puppetmaster" do |puppetmaster|
     puppetmaster.vm.hostname = "puppetmaster" + DOMAIN
-    puppetmaster.vm.provision "file", source: "site.pp", destination: "/tmp/site.pp"
+    puppetmaster.vm.provision "file", source: "manifests/site.pp", destination: "/tmp/site.pp"
     puppetmaster.vm.provision "shell", :path => "puppetmaster.sh"
   end
 
