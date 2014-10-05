@@ -1,20 +1,28 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+DOMAIN = ".vagrant.dev"
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  
+  config.landrush.enabled = true
+  config.vm.network "private_network", type: "dhcp"
 
-  config.vm.provision "shell", inline: "echo Hello"
+  config.vm.define "puppetmaster" do |puppetmaster|
+    puppetmaster.vm.box = "ubuntu/trusty64"
+    puppetmaster.vm.hostname = "puppetmaster" + DOMAIN
+    puppetmaster.vm.provision :shell, :path => "puppetmaster.sh"
+  end
 
   config.vm.define "primary" do |primary|
     primary.vm.box = "ubuntu/trusty64"
-    config.vm.network "private_network", type: "dhcp"    
+    primary.vm.hostname = "primary" + DOMAIN
   end
 
   config.vm.define "standby" do |standby|
     standby.vm.box = "ubuntu/trusty64"
-    config.vm.network "private_network", type: "dhcp"
+    standby.vm.hostname = "standby" + DOMAIN
   end
 
 end
