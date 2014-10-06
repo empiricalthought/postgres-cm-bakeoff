@@ -29,7 +29,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.define "standby" do |standby|
     standby.vm.hostname = "standby" + DOMAIN
     # below re-enables the agent; disabled by default in 14.04
-    primary.vm.provision "shell", inline: "puppet agent --enable"
+    standby.vm.provision "shell", inline: "puppet agent --enable"
     standby.vm.provision "puppet_server" do |puppet|
       puppet.puppet_server = "puppetmaster.vagrant.dev"
       puppet.options = ["--waitforcert=60", "--verbose"]
