@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [ ! -f /etc/puppet/site.pp ]
+if [ ! -f /etc/puppet/manifests/site.pp ]
 then
     apt-get -q update
     apt-get -q upgrade
