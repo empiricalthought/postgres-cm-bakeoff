@@ -29,11 +29,12 @@ class postgresql_node {
   file { '/var/lib/postgresql/.ssh':
     source => 'file:///home/vagrant/.ssh',
     recurse => true,
-    owner => 'postgres'
+    owner => 'postgres',
   }
 
   postgresql::server::role { 'rep':
-    password_hash => postgresql_password('rep', $rep_password);
+    password_hash => postgresql_password('rep', $rep_password),
+    replication => true,
   }
 
   class { 'postgresql::server::contrib':
@@ -42,24 +43,46 @@ class postgresql_node {
 
 }
 
-node 'primary.vagrant.dev' {
-  include postgresql_node
+class postgresql_primary inherits postgresql_node {
 
   postgresql::server::pg_hba_rule { 'allow replication user to connect':
     description => 'Permit streaming replication for access from standby',
     type => 'host',
     database => 'replication',
     user => 'rep',
-    address => 'standby.vagrant.dev',
+    address => 'samenet',
     auth_method => 'md5'
   }
 
   postgresql::server::config_entry {
     'wal_level': value => 'hot_standby';
-    'archive_mode': value => 'on';
+    'wal_keep_segments': value => '1000';
+    'archive_mode': value => 'off';
+    'max_wal_senders': value => '5';
   }
+
+}
+
+class postgresql_standby inherits postgresql_node {
+
+  file { '/data':
+    ensure => 'directory',
+    owner => 'postgres',
+    mode => 0700,
+    require => [ Class['postgresql::server'] ],
+  } ->
+  file { '/data/wal_archive':
+    ensure => 'directory',
+    owner => 'postgres',
+    mode => 0700,
+  }
+
+}
+
+node 'primary.vagrant.dev' {
+  include postgresql_primary
 }
 
 node 'standby.vagrant.dev' {
-  include postgresql_node
+  include postgresql_standby
 }
