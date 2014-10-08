@@ -75,6 +75,21 @@ class postgresql_standby inherits postgresql_node {
     ensure => 'directory',
     owner => 'postgres',
     mode => 0700,
+  } ->
+  file { '/etc/init.d/pg_wal_receiver':
+    ensure => 'present',
+    owner  => 'root',
+    source => 'file:///vagrant/pg_wal_receiver'
+  } ->
+  file { '/var/lib/postgresql/.pgpass':
+    ensure  => 'present',
+    owner   => 'postgres',
+    mode    => 0700,
+    content => "primary.vagrant.dev:5432:*:rep:$rep_password"
+  } ->
+  service { 'pg_wal_receiver':
+    name => 'pg_wal_receiver',
+    ensure => 'running',
   }
 
 }
