@@ -30,6 +30,7 @@ class postgresql_node {
     source => 'file:///home/vagrant/.ssh',
     recurse => true,
     owner => 'postgres',
+    mode => 0700,
   }
 
   postgresql::server::role { 'rep':
@@ -52,6 +53,14 @@ class postgresql_primary inherits postgresql_node {
     user => 'rep',
     address => 'samenet',
     auth_method => 'md5'
+  }
+
+  postgresql::server::pg_hba_rule { 'allow replication user to connect locally':
+    description => 'Permit base backups to be created',
+    type => 'local',
+    database => 'replication',
+    user => 'postgres',
+    auth_method => 'trust'
   }
 
   postgresql::server::config_entry {
@@ -90,8 +99,13 @@ class postgresql_standby inherits postgresql_node {
   service { 'pg_wal_receiver':
     name => 'pg_wal_receiver',
     ensure => 'running',
+  } ->
+  exec { 'create_base_backup':
+    command => "/usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no postgres@primary.vagrant.dev pg_basebackup -D /tmp/pg_backup  -F t -z -X f",
+    user => "postgres",
+    require => [ File['/var/lib/postgresql/.ssh' ] ],
   }
-
+  
 }
 
 node 'primary.vagrant.dev' {
