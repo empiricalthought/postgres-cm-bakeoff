@@ -90,6 +90,12 @@ class postgresql_standby inherits postgresql_node {
     owner  => 'root',
     source => 'file:///vagrant/pg_wal_receiver'
   } ->
+  file { '/var/lib/postgresql/start_replica.sh':
+    ensure => 'present',
+    owner  => 'postgres',
+    mode   => 0700,
+    source => 'file:///vagrant/start_replica.sh',
+  } ->
   file { '/var/lib/postgresql/.pgpass':
     ensure  => 'present',
     owner   => 'postgres',
@@ -100,8 +106,8 @@ class postgresql_standby inherits postgresql_node {
     name => 'pg_wal_receiver',
     ensure => 'running',
   } ->
-  exec { 'create_base_backup':
-    command => "/usr/bin/ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no postgres@primary.vagrant.dev pg_basebackup -D /tmp/pg_backup  -F t -z -X f",
+  exec { 'start_replica':
+    command => "/var/lib/postgresql/start_replica.sh",
     user => "postgres",
     require => [ File['/var/lib/postgresql/.ssh' ] ],
   }
