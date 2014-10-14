@@ -11,6 +11,11 @@
       with_items:
         - libpq-dev
         - python-psycopg2
+    - name: Ensure /var/lib/postgresql/.ssh exists
+      command: creates=/var/lib/postgresql/.ssh
+               cp -r /home/vagrant/.ssh /var/lib/postgresql/
+    - name: Ensure /var/lib/postgresql/.ssh is owned by postgres user
+      command: chown -R postgres /var/lib/postgresql/.ssh
 
 - hosts: primary
   sudo: yes
@@ -22,7 +27,7 @@
       lineinfile: dest=/etc/postgresql/9.3/main/pg_hba.conf
                   regexp='^host\s+all\s+all\s+127.0.0.1/32+\s+md5'
                   line='host\tall\t\tall\t\t0.0.0.0/0\t\tmd5'
-      notify: restart postgresql
+      notify: Restart PostgreSQL
   handlers:
-    - name: restart postgresql
+    - name: Restart PostgreSQL
       service: name=postgresql state=restarted

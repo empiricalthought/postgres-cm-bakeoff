@@ -15,8 +15,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   
   config.vm.define "primary" do |primary|
     primary.vm.hostname = "primary" + DOMAIN
+    primary.vm.provision "file", source: "insecure_private_key", destination: "~/.ssh/id_rsa"
     primary.vm.provision "ansible" do |ansible|
       ansible.playbook = "playbook.yml"
     end
   end
+
+  config.vm.define "standby" do |standby|
+    standby.vm.hostname = "standby" + DOMAIN
+    standby.vm.provision "file", source: "insecure_private_key", destination: "~/.ssh/id_rsa"
+    standby.vm.provision "ansible" do |ansible|
+      ansible.playbook = "playbook.yml"
+    end
+  end
+
 end
