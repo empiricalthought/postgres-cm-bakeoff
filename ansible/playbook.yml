@@ -1,0 +1,28 @@
+---
+- hosts: all
+  sudo: yes
+  tasks:
+    - name: Ensure PostgreSQL is present
+      apt: name=postgresql-9.3 state=present
+    - name: Ensure PostgreSQL contrib is present
+      apt: name=postgresql-contrib-9.3 state=present
+    - name: Ensure psycopg is present
+      apt: pkg={{item}} state=present
+      with_items:
+        - libpq-dev
+        - python-psycopg2
+
+- hosts: primary
+  sudo: yes
+  sudo_user: postgres
+  tasks:
+    - name: Ensure PostgreSQL replication user exists
+      postgresql_user: name=rep password=vader role_attr_flags=REPLICATION
+    - name: Update pg_hba.conf
+      lineinfile: dest=/etc/postgresql/9.3/main/pg_hba.conf
+                  regexp='^host\s+all\s+all\s+127.0.0.1/32+\s+md5'
+                  line='host\tall\t\tall\t\t0.0.0.0/0\t\tmd5'
+      notify: restart postgresql
+  handlers:
+    - name: restart postgresql
+      service: name=postgresql state=restarted

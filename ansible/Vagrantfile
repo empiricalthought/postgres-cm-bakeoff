@@ -1,0 +1,22 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+DOMAIN = ".vagrant.dev"
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  if Vagrant.has_plugin?("vagrant-cachier")
+    config.cache.scope = :box
+  end
+
+  config.landrush.enabled = true
+  config.vm.network "private_network", type: "dhcp"
+  config.vm.box = "ubuntu/trusty64"
+  
+  config.vm.define "primary" do |primary|
+    primary.vm.hostname = "primary" + DOMAIN
+    primary.vm.provision "ansible" do |ansible|
+      ansible.playbook = "playbook.yml"
+    end
+  end
+end
