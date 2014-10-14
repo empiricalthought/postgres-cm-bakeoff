@@ -8,12 +8,6 @@ class postgresql_node {
     always_apt_update   => true,
   }
 
-  file { '/etc/default/locale':
-    ensure  => 'file',
-    owner   => 'root',
-    group   => 'root',
-    content => "LANG=en_US.UTF-8\n",
-  } ->
   class { 'postgresql::globals':
     version             => '9.3',
     manage_package_repo => true,
