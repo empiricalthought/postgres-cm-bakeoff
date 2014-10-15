@@ -12,10 +12,7 @@
         - libpq-dev
         - python-psycopg2
     - name: Ensure /var/lib/postgresql/.ssh exists
-      command: creates=/var/lib/postgresql/.ssh
-               cp -r /home/vagrant/.ssh /var/lib/postgresql/
-    - name: Ensure /var/lib/postgresql/.ssh is owned by postgres user
-      command: chown -R postgres /var/lib/postgresql/.ssh
+      shell: cp -r /home/vagrant/.ssh /var/lib/postgresql/ && chown -R postgres /var/lib/postgresql/.ssh creates=/var/lib/postgresql/.ssh
 
 - hosts: primary
   sudo: yes
@@ -23,11 +20,46 @@
   tasks:
     - name: Ensure PostgreSQL replication user exists
       postgresql_user: name=rep password=vader role_attr_flags=REPLICATION
+    - name: Update postgresql.conf
+      lineinfile:
+        dest=/etc/postgresql/9.3/main/postgresql.conf
+        regexp="{{ item.regexp }}"
+        line="{{ item.line }}"
+      with_items:
+        - { regexp: '^#?listen_addresses', line: "listen_addresses = '*'" }
+        - { regexp: '^#?wal_level', line: 'wal_level = hot_standby' }
+        - { regexp: '^#?wal_keep_segments', line: 'wal_keep_segments = 1000' }
+        - { regexp: '^#?archive_mode', line: 'archive_mode = off' }
+        - { regexp: '^#?max_wal_senders', line: 'max_wal_senders = 5' }
     - name: Update pg_hba.conf
-      lineinfile: dest=/etc/postgresql/9.3/main/pg_hba.conf
-                  regexp='^host\s+all\s+all\s+127.0.0.1/32+\s+md5'
-                  line='host\tall\t\tall\t\t0.0.0.0/0\t\tmd5'
+      copy: src=primary_pg_hba.conf dest=/etc/postgresql/9.3/main/pg_hba.conf
+            owner=postgres mode=0600
       notify: Restart PostgreSQL
+
   handlers:
     - name: Restart PostgreSQL
       service: name=postgresql state=restarted
+
+
+- hosts: standby
+  sudo: yes
+  tasks:
+    - name: Ensure WAL archive directory /data/wal_archive exists 
+      shell: mkdir -p /data/wal_archive && chown postgres /data/wal_archive
+             creates=/data/wal_archive 
+    - name: Ensure start_replica.sh script exists
+      copy: src=start_replica.sh dest=/var/lib/postgresql/start_replica.sh
+            owner=postgres mode=0700
+    - name: Ensure pg_wal_receiver init script exists
+      copy: src=pg_wal_receiver dest=/etc/init.d/pg_wal_receiver
+            owner=root mode=0755
+    - name: Ensure .pgpass file exists in /var/lib/postgresql
+      copy: content="primary.vagrant.dev:5432:*:rep:$rep_password\n"
+            dest=/var/lib/postgresql/.pgpass owner=postgres mode=0700
+      notify: Start pg_wal_receiver
+    - name: Start replication
+      shell: sudo -u postgres /var/lib/postgresql/start_replica.sh
+
+  handlers:
+    - name: Start pg_wal_receiver
+      service: name=pg_wal_receiver state=started
